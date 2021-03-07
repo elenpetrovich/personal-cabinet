@@ -2,24 +2,40 @@ from django.contrib.auth.models import User
 from rest_framework import serializers, viewsets, mixins, views, status
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
+from rest_framework import permissions
 
-from .models import Account
-from .serializers import AccountSerializer
+from .models import Account, Company
+from .serializers import AccountSerializer, CompanySerializer
 
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+class UserViewSet(viewsets.GenericViewSet):
+    queryset = Account.objects
     serializer_class = AccountSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    @action(detail=False, methods=['post'], url_path="many")
-    def create_many(self, request, *args, **kwargs):
-        data = []
-        for user in request.data.get("users"):
-            serializer = self.get_serializer(data=user)
-            if serializer.is_valid(raise_exception=False):
-                self.perform_create(serializer)
-                data.append(serializer.data)
-        return Response(data, status=status.HTTP_201_CREATED)
+    def list(self, request, *args, **kwargs):
+        queryset = self.queryset.get(id=request.user.id)
+        serializer = self.get_serializer(queryset)
+        return Response({"data": serializer.data}, template_name="user.html")
+
+
+class CompanyViewSet(viewsets.GenericViewSet):
+    queryset = Company.objects
+    serializer_class = CompanySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(
+            self.queryset.filter(users=request.user).all())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({"data": serializer.data},
+                        template_name="company_list.html")
 
 
 @api_view(['GET', 'POST'])
