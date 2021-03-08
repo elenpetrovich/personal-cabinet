@@ -1,0 +1,56 @@
+body {
+  background: #f0f0f0;
+}
+a, li {
+  text-decoration: none;
+  color: black;
+}
+
+a:hover, li:hover {
+  text-decoration: none;
+  color: #6633FF;
+}
+
+.navbar-brand {
+  left: 100px;
+}
+
+.nav-link:hover, .navbar-brand:hover {
+  text-decoration: none;
+  color: #ffc107;
+}
+
+.container {
+  height: 80%;
+  margin-top: 40px;
+  overflow: auto;
+  box-shadow: 0 15px 15px rgba(0,0,0,0.15), 0 4px 10px rgba(0,0,0,0.13);
+  padding: 25px 30px 40px 60px;
+}
+
+.bg-style {
+  background: #6633FF;
+}
+
+.ml {
+  margin-left: 10px;
+}
+
+.navbar-style, .navbar-style a{
+  color: #fff;
+}
+
+.workspace1C {
+  height: 100%;
+  width: 75%;
+  left: 2%;
+  padding-right: 4%;
+}
+
+.menu1C {
+  padding-top: 3.5%;
+}
+
+.obj_list {
+  box-shadow: 0 5px 5px rgba(0,0,0,0.15), 0 4px 10px rgba(0,0,0,0.13);
+}

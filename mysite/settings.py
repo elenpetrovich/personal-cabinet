@@ -107,6 +107,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.TemplateHTMLRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
         'document.helpers.JSONRenderer',
     ],
@@ -131,3 +132,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 STATICFILES_DIRS = [STATIC_DIR]
+
+LOGIN_REDIRECT_URL = 'company-list'
+LOGOUT_REDIRECT_URL = 'login'

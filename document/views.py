@@ -3,12 +3,13 @@ from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from bson import ObjectId
 from django.contrib.auth.hashers import make_password
+from django.utils.crypto import get_random_string
 from rest_framework import permissions
 
 from .models import db_docs
-from cabinet.models import Company
+from cabinet.models import Account, Company
 from mysite.settings import MONGODB_KEY
-from cabinet.serializers import CompanySerializer
+from cabinet.serializers import CompanySerializer, AccountSerializer
 
 
 class DocumentViewSet(viewsets.ViewSet):
@@ -93,7 +94,7 @@ class SyncViewSet(viewsets.ViewSet):
     def get_company(self, company, secret_key):
         company = Company.objects.filter(name=company).first()
         if bool(company.secret_key) is True:
-            if company.secret_key != self.get_hash(secret_key):
+            if company.secret_key != secret_key:
                 return None
         return company
 
@@ -110,16 +111,16 @@ class SyncViewSet(viewsets.ViewSet):
     def sync_docs(self, request):
         if request.method in permissions.SAFE_METHODS:
             return Response({})
-        created = []
+        data = {}
         for number, company in enumerate(request.data.keys()):
             collection = self.get_collection(
                 company, request.headers.get("COMPANY-" + str(number), ""))
             if collection is not None:
-                created.append(company)
+                data[company] = []
                 for doc in request.data[company]:
                     new_doc = self.save_doc(doc, collection)
-                    created[company].append(new_doc)
-        return Response(created)
+                    data[company].append(new_doc)
+        return Response(data, status=status.HTTP_201_CREATED)
 
     @action(detail=False,
             methods=['get', 'post'],
@@ -128,14 +129,43 @@ class SyncViewSet(viewsets.ViewSet):
     def sync_users(self, request, *args, **kwargs):
         if request.method in permissions.SAFE_METHODS:
             return Response({})
-        data = []
-        for user in request.data.get("users"):
-            serializer = self.get_serializer(data=user)
-            if serializer.is_valid(raise_exception=False):
-                self.perform_create(serializer)
-                data.append(serializer.data)
+        data = {}
+        for number, company in enumerate(request.data.keys()):
+            company_data = self.get_company(
+                company, request.headers.get("COMPANY-" + str(number + 1), ""))
+            if company_data is not None:
+                data[company] = []
+                for user in request.data[company]:
+                    new_user = self.save_user(user, company_data)
+                    data[company].append(new_user)
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False,
+            methods=['get', 'post'],
+            url_path="company",
+            url_name="company")
+    def sync_company(self, request, *args, **kwargs):
+        if request.method in permissions.SAFE_METHODS:
+            return Response({})
+        data = {}
         return Response(data, status=status.HTTP_201_CREATED)
 
     def save_doc(self, doc: dict, collection: str, pk: str = "Ref"):
         result = db_docs[collection].replace_one({pk: doc[pk]}, doc, True)
         return doc[pk], result.modified_count, str(result.upserted_id)
+
+    def save_user(self, user: dict, company: str):
+        db_user = Account.objects.filter(username=user["username"]).first()
+        serializer = AccountSerializer(instance=db_user, data=user)
+        password = None
+        if serializer.is_valid(raise_exception=False):
+            new_user: Account = serializer.save()
+            if db_user is None:
+                password = get_random_string(8)
+                new_user.password = make_password(password)
+                new_user.save()
+                # new_user.groups.add(group, group, ...)
+        return user["username"], bool(db_user), password
+
+    def save_company(self, company: dict):
+        return ""

@@ -20,10 +20,6 @@ class AccountSerializer(serializers.ModelSerializer):
             'groups',
         )
 
-    def create(self, validated_data):
-        return Account.objects.create(password=Account.random_password(),
-                                      **validated_data)
-
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
