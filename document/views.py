@@ -37,11 +37,11 @@ class DocumentViewSet(viewsets.ViewSet):
                 search.update({query[1:]: str(request.query_params[query])})
         data = db_docs[self.collection].find(search)
         if request.query_params.get("no_company", "0") == "1":
-            return Response({"data": list(data)})
+            return Response({"document_list": list(data)})
         serializer = CompanySerializer(self.company)
         return Response(
             {
-                "data": list(data),
+                "document_list": list(data),
                 "company": serializer.data
             },
             template_name="document_list.html",
@@ -53,11 +53,11 @@ class DocumentViewSet(viewsets.ViewSet):
         if data is None:
             raise exceptions.NotFound("Документ не найден")
         if request.query_params.get("no_company", "0") == "1":
-            return Response({"data": list(data)})
+            return Response({"document": data})
         serializer = CompanySerializer(self.company)
         return Response(
             {
-                "data": list(data),
+                "document": data,
                 "company": serializer.data
             },
             template_name="document_list.html",
@@ -83,8 +83,8 @@ class ByHeaderKey(permissions.BasePermission):
 class SyncViewSet(viewsets.ViewSet):
     permission_classes = [ByHeaderKey]
 
-    def get_collection(self):
-        company = self.get_company()
+    def get_collection(self, company, secret_key):
+        company = self.get_company(company, secret_key)
         if company is not None:
             collection = company.mongodb_collection
             if bool(collection) is True:
@@ -114,7 +114,7 @@ class SyncViewSet(viewsets.ViewSet):
         data = {}
         for number, company in enumerate(request.data.keys()):
             collection = self.get_collection(
-                company, request.headers.get("COMPANY-" + str(number), ""))
+                company, request.headers.get("COMPANY-" + str(number + 1), ""))
             if collection is not None:
                 data[company] = []
                 for doc in request.data[company]:

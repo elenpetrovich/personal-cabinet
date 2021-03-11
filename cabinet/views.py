@@ -34,7 +34,7 @@ class CompanyViewSet(viewsets.GenericViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
-        return Response({"data": serializer.data},
+        return Response({"company_list": serializer.data},
                         template_name="company_list.html")
 
 

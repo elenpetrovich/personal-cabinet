@@ -30,6 +30,9 @@ class Company(models.Model):
     secret_key = models.CharField("Ключ доступа", max_length=254)
     password = models.CharField("Пароль", max_length=254)
 
+    def __str__(self) -> str:
+        return self.name + " г. " + self.city
+
 
 class Document(models.Model):
     id = models.CharField(max_length=254, db_column="_id")
