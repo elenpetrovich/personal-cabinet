@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load tags_mongo %}
+
+{% block content %}
+<h4>Список документов</h4>
+<table>
+    <tr>
+        <td>Название</td>
+        <td>Ссылка</td>
+    </tr>
+    {% for document in document_list %}
+    <tr>
+        <td>{{ document.Название }}</td>
+        <td><a href="{% url 'docs-detail' pk=document|ID %}?company={{company.name}}">Подробно</a></td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock content %}

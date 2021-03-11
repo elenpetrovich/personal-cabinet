@@ -1,12 +1,10 @@
 {% extends 'base.html' %}
 
 {% block content %}
-{% if user.is_authenticated %}
-<h4>Документы</h4>
-
-{% endif %}
-<div class="row">
-
-</div>
-
+<h4>Компании</h4>
+{% for company in company_list %}
+<ul>
+    <li><a href="{% url 'docs-list' %}?company={{company.name}}">{{ company.name }}</a></li>
+</ul>
+{% endfor %}
 {% endblock content %}

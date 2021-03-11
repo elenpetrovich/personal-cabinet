@@ -26,7 +26,7 @@
 
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mr-auto">
-
+                <a href="{% url 'company-list' %}">Компании</a>
             </ul>
             <form class="form-inline my-2 my-lg-0">
                 {% if user.is_authenticated %}
@@ -41,6 +41,7 @@
 
     <div class="container bg-white rounded">
         {% block content %}
+        <a href="{% url 'company-list' %}">Компании</a>
         {% endblock content %}
     </div>
 

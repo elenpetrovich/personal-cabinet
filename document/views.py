@@ -60,7 +60,7 @@ class DocumentViewSet(viewsets.ViewSet):
                 "document": data,
                 "company": serializer.data
             },
-            template_name="document_list.html",
+            template_name="document_detail.html",
         )
 
     @action(detail=True, methods=['get'], url_path="print")
