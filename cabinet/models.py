@@ -32,11 +32,3 @@ class Company(models.Model):
 
     def __str__(self) -> str:
         return self.name + " г. " + self.city
-
-
-class Document(models.Model):
-    id = models.CharField(max_length=254, db_column="_id")
-    ref = models.CharField(max_length=254, db_column="Ref")
-
-    class Meta:
-        abstract = True

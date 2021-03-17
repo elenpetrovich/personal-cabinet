@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import Company, Document
+from .models import Company
 
 
 class CompanyAdmin(admin.ModelAdmin):
@@ -13,6 +13,3 @@ admin.site.register(Company, CompanyAdmin)
 
 class DocumentAdmin(admin.ModelAdmin):
     pass
-
-
-# admin.site.register(Document, DocumentAdmin)

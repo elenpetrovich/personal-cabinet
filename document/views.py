@@ -1,3 +1,4 @@
+import re
 from rest_framework import serializers, viewsets, mixins, views, status, exceptions
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
@@ -5,11 +6,15 @@ from bson import ObjectId
 from django.contrib.auth.hashers import make_password
 from django.utils.crypto import get_random_string
 from rest_framework import permissions
+from django.core.files.storage import default_storage
+from django.views.static import serve
+from django.core.exceptions import PermissionDenied
 
-from .models import db_docs
+from .models import db_docs, DocumentFile
 from cabinet.models import Account, Company
 from mysite.settings import MONGODB_KEY
 from cabinet.serializers import CompanySerializer, AccountSerializer
+from .serializer import DocumentFileSerializers, FileUploadSerializers
 
 
 class DocumentViewSet(viewsets.ViewSet):
@@ -29,6 +34,12 @@ class DocumentViewSet(viewsets.ViewSet):
         if self.company is None:
             raise exceptions.NotFound("Компания не найдена")
 
+    def get_doc_file(self, mongodb_id):
+        return DocumentFile.objects.filter(
+            company=self.company,
+            mongodb_id=mongodb_id,
+        ).first()
+
     def list(self, request):
         self.get_collection()
         search = {}
@@ -36,8 +47,6 @@ class DocumentViewSet(viewsets.ViewSet):
             if query[0] == "_":
                 search.update({query[1:]: str(request.query_params[query])})
         data = db_docs[self.collection].find(search)
-        if request.query_params.get("no_company", "0") == "1":
-            return Response({"document_list": list(data)})
         serializer = CompanySerializer(self.company)
         return Response(
             {
@@ -65,7 +74,28 @@ class DocumentViewSet(viewsets.ViewSet):
 
     @action(detail=True, methods=['get'], url_path="print")
     def print(self, request, pk=None):
-        return Response({})
+        self.get_collection()
+        data = db_docs[self.collection].find_one({"_id": ObjectId(pk)})
+        if data is None:
+            raise exceptions.NotFound("Документ не найден")
+        doc_file = self.get_doc_file(str(data["_id"]))
+        if doc_file is None:
+            file_request = DocumentFile(
+                mongodb_id=str(data["_id"]),
+                company=self.company,
+            )
+            doc_file = file_request.save()
+        company_serializer = CompanySerializer(self.company)
+        file_serializer = DocumentFileSerializers(doc_file)
+        return Response(
+            {
+                "document": data,
+                "company": company_serializer.data,
+                "file": file_serializer.data,
+                "first_request": bool(doc_file),
+            },
+            template_name="document_print.html",
+        )
 
 
 class ByHeaderKey(permissions.BasePermission):
@@ -83,17 +113,17 @@ class ByHeaderKey(permissions.BasePermission):
 class SyncViewSet(viewsets.ViewSet):
     permission_classes = [ByHeaderKey]
 
-    def get_collection(self, company, secret_key):
-        company = self.get_company(company, secret_key)
+    def get_collection(self, company_name, secret_key):
+        company = self.get_company(company_name, secret_key)
         if company is not None:
             collection = company.mongodb_collection
             if bool(collection) is True:
                 return collection
         return None
 
-    def get_company(self, company, secret_key):
-        company = Company.objects.filter(name=company).first()
-        if bool(company.secret_key) is True:
+    def get_company(self, company_name, secret_key):
+        company = Company.objects.filter(name=company_name).first()
+        if company and company.secret_key:
             if company.secret_key != secret_key:
                 return None
         return company
@@ -150,6 +180,45 @@ class SyncViewSet(viewsets.ViewSet):
         data = {}
         return Response(data, status=status.HTTP_201_CREATED)
 
+    @action(detail=False,
+            methods=['get', 'post'],
+            url_path="file_request",
+            url_name="file_request")
+    def sync_file_request(self, request, *args, **kwargs):
+        if request.method in permissions.SAFE_METHODS:
+            return Response({})
+        data = {}
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False,
+            methods=['get', 'post'],
+            url_path="file",
+            url_name="file")
+    def sync_file(self, request, *args, **kwargs):
+        if request.method in permissions.SAFE_METHODS:
+            return Response({})
+        serializer = FileUploadSerializers(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        company_data = self.get_company(serializer.data["company"],
+                                        request.headers.get("COMPANY-1", ""))
+        if company_data is None:
+            raise exceptions.NotFound("Компания не найдена")
+        data = serializer.validated_data
+        reg = re.compile('[^a-zA-ZА-я0-9_ ]')
+        file_name = f"{reg.sub('', data['company'])}/{reg.sub('', data['file_rule']).lower()}/{data['file_ref']}.{data['file_format']}"
+        file_path = default_storage.save(
+            file_name,
+            data["file_data"],
+        )
+        file_url = default_storage.url(file_name)
+        return Response(
+            {
+                "url": file_url,
+                "file_name": file_name
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
     def save_doc(self, doc: dict, collection: str, pk: str = "Ref"):
         result = db_docs[collection].replace_one({pk: doc[pk]}, doc, True)
         return doc[pk], result.modified_count, str(result.upserted_id)
@@ -169,3 +238,33 @@ class SyncViewSet(viewsets.ViewSet):
 
     def save_company(self, company: dict):
         return ""
+
+
+category_name = {
+    "all": ["all", "все", "общий"],
+    "user": ["private", "сотрудники", "приватный"],
+}
+
+
+def serve_with_permissions(request,
+                           path,
+                           document_root=None,
+                           show_indexes=False):
+    if request.user.is_authenticated:
+        path_parts = path.split("/")
+        if len(path_parts) == 3:  # company/category/file.name
+            if path_parts[1] in category_name["all"]:
+                pass
+            elif path_parts[1] in category_name["user"]:
+                company = Company.objects.filter(name=path_parts[0],
+                                                 users=request.user).first()
+                if company is None:
+                    raise PermissionDenied
+            else:
+                company = Company.objects.filter(name=path_parts[0],
+                                                 users=request.user).first()
+                if company is None:
+                    raise PermissionDenied
+                print(path_parts[2])
+        return serve(request, path, document_root, show_indexes)
+    raise PermissionDenied

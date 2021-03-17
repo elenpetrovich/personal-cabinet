@@ -2,9 +2,12 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.generic.base import RedirectView
 from rest_framework import routers
-from cabinet.views import UserViewSet, postData, CompanyViewSet
-from document.views import DocumentViewSet, SyncViewSet
 from django.contrib.auth.views import LoginView, LogoutView
+from django.conf.urls.static import static
+from django.conf import settings
+
+from cabinet.views import UserViewSet, postData, CompanyViewSet
+from document.views import DocumentViewSet, SyncViewSet, serve_with_permissions
 
 
 class TemaplteAPIView(routers.APIRootView):
@@ -31,4 +34,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     re_path(r'^favicon\.ico$',
             RedirectView.as_view(url='static/favicon.ico', permanent=True)),
-]
+] + static(settings.MEDIA_URL,
+           serve_with_permissions,
+           document_root=settings.MEDIA_ROOT)
