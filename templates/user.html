@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Здравствуйте, {{ user }}</h1>
-
+<h1>Здравствуйте, {{ account.username }}</h1>
+<h2>Ваши роли</h2>
+<ul>
+    {% for role in roles %}
+    <li>{{ role.company.name }} г. {{ role.company.city }}: {{ role.group.name }}</li>
+    {% endfor %}
+</ul>
 {% endblock content %}

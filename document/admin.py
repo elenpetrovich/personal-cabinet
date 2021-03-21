@@ -1,3 +1,7 @@
 from django.contrib import admin
+from .models import DocumentFile, DocumentPermissions
 
-# Register your models here.
+
+@admin.register(DocumentFile, DocumentPermissions)
+class DocumentAdmin(admin.ModelAdmin):
+    pass

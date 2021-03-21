@@ -1,4 +1,5 @@
 import re
+from time import sleep
 from rest_framework import serializers, viewsets, mixins, views, status, exceptions
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
@@ -10,7 +11,7 @@ from django.core.files.storage import default_storage
 from django.views.static import serve
 from django.core.exceptions import PermissionDenied
 
-from .models import db_docs, DocumentFile
+from .models import db_docs, DocumentFile, DocumentPermissions
 from cabinet.models import Account, Company
 from mysite.settings import MONGODB_KEY
 from cabinet.serializers import CompanySerializer, AccountSerializer
@@ -20,6 +21,18 @@ from .serializer import DocumentFileSerializers, FileUploadSerializers
 class DocumentViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_exclude_doc_list(self):
+        doc_perm = DocumentPermissions.objects.exclude(
+            groups__user=self.request.user).values_list('mongodb_id').all()
+        return [ObjectId(x[0]) for x in list(doc_perm)]
+
+    def is_allowed_doc(self, mongodb_id):
+        doc_perm = DocumentPermissions.objects.filter(
+            mongodb_id=mongodb_id).first()
+        if doc_perm is not None and not doc_perm.groups.filter(
+                user=self.request.user).first():
+            raise exceptions.PermissionDenied("Документ не доступен")
+
     def get_collection(self):
         self.get_company()
         self.collection = self.company.mongodb_collection
@@ -27,10 +40,8 @@ class DocumentViewSet(viewsets.ViewSet):
             raise exceptions.NotFound("Коллекция не найдена")
 
     def get_company(self):
-        self.company = Company.objects.filter(
-            name=self.request.query_params.get("company", ""),
-            users=self.request.user,
-        ).first()
+        self.company = self.request.user.get_companies(
+            self.request.query_params.get("company", "")).first()
         if self.company is None:
             raise exceptions.NotFound("Компания не найдена")
 
@@ -46,6 +57,7 @@ class DocumentViewSet(viewsets.ViewSet):
         for query in request.query_params:
             if query[0] == "_":
                 search.update({query[1:]: str(request.query_params[query])})
+        search.update({"_id": {"$nin": self.get_exclude_doc_list()}})
         data = db_docs[self.collection].find(search)
         serializer = CompanySerializer(self.company)
         return Response(
@@ -58,6 +70,7 @@ class DocumentViewSet(viewsets.ViewSet):
 
     def retrieve(self, request, pk=None):
         self.get_collection()
+        self.is_allowed_doc(pk)
         data = db_docs[self.collection].find_one({"_id": ObjectId(pk)})
         if data is None:
             raise exceptions.NotFound("Документ не найден")
@@ -75,6 +88,7 @@ class DocumentViewSet(viewsets.ViewSet):
     @action(detail=True, methods=['get'], url_path="print")
     def print(self, request, pk=None):
         self.get_collection()
+        self.is_allowed_doc(pk)
         data = db_docs[self.collection].find_one({"_id": ObjectId(pk)})
         if data is None:
             raise exceptions.NotFound("Документ не найден")

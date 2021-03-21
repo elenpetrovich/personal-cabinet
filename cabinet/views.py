@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import permissions
 
 from .models import Account, Company
-from .serializers import AccountSerializer, CompanySerializer
+from .serializers import AccountSerializer, CompanySerializer, GroupSerializer, RoleSerializer
 
 
 class UserViewSet(viewsets.GenericViewSet):
@@ -14,9 +14,15 @@ class UserViewSet(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request, *args, **kwargs):
-        queryset = self.queryset.get(id=request.user.id)
-        serializer = self.get_serializer(queryset)
-        return Response({"data": serializer.data}, template_name="user.html")
+        serializer = self.get_serializer(request.user)
+        roles_data = []
+        for role in request.user.get_roles():
+            roles_data.append(RoleSerializer(role).data)
+        return Response({
+            "account": serializer.data,
+            "roles": roles_data
+        },
+                        template_name="user.html")
 
 
 class CompanyViewSet(viewsets.GenericViewSet):
@@ -25,8 +31,7 @@ class CompanyViewSet(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(
-            self.queryset.filter(users=request.user).all())
+        queryset = self.filter_queryset(self.queryset.filter().all())
 
         page = self.paginate_queryset(queryset)
         if page is not None:
