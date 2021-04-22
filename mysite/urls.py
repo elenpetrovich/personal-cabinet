@@ -6,8 +6,10 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.conf.urls.static import static
 from django.conf import settings
 
-from cabinet.views import UserViewSet, postData, CompanyViewSet
-from document.views import DocumentViewSet, SyncViewSet, serve_with_permissions
+from cabinet.views import UserViewSet, postData
+from document.views import DocumentViewSet, FileRender
+from company.views import CompanyViewSet
+from synchronization.views import SyncViewSet
 
 
 class TemaplteAPIView(routers.APIRootView):
@@ -20,7 +22,10 @@ class TempaleRouter(routers.DefaultRouter):
 
 router = TempaleRouter()
 router.register(r'user', UserViewSet, basename='user')
-router.register(r'docs', DocumentViewSet, basename='docs')
+router.register(
+    r'company/(?P<company_pk>[^/.]+)/(?P<collection_pk>[^/.]+)/docs',
+    DocumentViewSet,
+    basename='docs')
 router.register(r'company', CompanyViewSet, basename="company")
 router.register(r'sync', SyncViewSet, basename="sync")
 
@@ -35,5 +40,5 @@ urlpatterns = [
     re_path(r'^favicon\.ico$',
             RedirectView.as_view(url='static/favicon.ico', permanent=True)),
 ] + static(settings.MEDIA_URL,
-           serve_with_permissions,
+           FileRender.serve_with_permissions,
            document_root=settings.MEDIA_ROOT)

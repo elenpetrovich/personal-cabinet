@@ -37,7 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'cabinet',
+    'company',
     'document',
+    'synchronization',
 ]
 
 MIDDLEWARE = [
@@ -81,7 +83,7 @@ DATABASES = {
 }
 
 MONGODB = "mongodb://root:pass@192.168.0.100:27017"
-MONGODB_KEY = "123"
+X_API_KEY = "123"
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
