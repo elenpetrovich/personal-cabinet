@@ -2,8 +2,8 @@
 {% load tags_mongo %}
 
 {% block content %}
-<h4>Документ: {{ document.Название }}</h4>
+<h4>{{ document.Title }}: {{ document.Number }}</h4>
 {% for key, value in document.items %}
-    {{ key }}: {{ value }}
+    {{ key }}: {{ value }} <br>
 {% endfor %}
 {% endblock content %}
