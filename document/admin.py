@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import DocumentFile, DocumentPermissions
+from .models import Document
 
 
-@admin.register(DocumentFile, DocumentPermissions)
+@admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
     pass

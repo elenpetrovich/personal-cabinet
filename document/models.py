@@ -1,43 +1,49 @@
 from django.contrib.auth.models import Group
 from django.http import request
 from pymongo import MongoClient
-from mysite.settings import MONGODB
 from django.db import models
+import uuid
+
+from mysite.settings import MONGODB
 
 client = MongoClient(MONGODB)
-db_docs = client['documents']
 
 
-class DocumentFile(models.Model):
-    saved = models.BooleanField("Сохранен", default=False)
-    file_path = models.FileField("Название",
-                                 max_length=254,
-                                 null=True,
-                                 default=None)
-    requested_date = models.DateTimeField("Заявка создана", auto_now_add=True)
-    saved_file_date = models.DateTimeField("Файл сохранен")
+class Document(models.Model):
+    id = models.SlugField("ObjectID", max_length=24, primary_key=True)
+    ref = models.SlugField("Ref", max_length=34)
+    created_at = models.DateTimeField("Создан", auto_now_add=True)
+    updated_at = models.DateTimeField("Изменен", auto_now=True)
+    collection = models.ForeignKey("company.Collection",
+                                   on_delete=models.CASCADE,
+                                   related_name="docs")
+    is_public = models.BooleanField("Публичность", default=False)
 
-    def __str__(self) -> str:
-        return f"{self.file_path}"
+    file_folder = models.FileField("Путь до папки с файлами",
+                                   max_length=254,
+                                   null=True,
+                                   default=None)
 
-
-class DocumentPermissions(models.Model):
-    mongodb_id = models.SlugField("ObjectID", max_length=25)
-    documet_ref = models.SlugField("Ref", max_length=37)
-    company = models.ForeignKey("cabinet.Company", on_delete=models.CASCADE)
-    created = models.DateTimeField("Создан", auto_now_add=True)
-    updated = models.DateTimeField("Изменен", auto_now=True)
-    file = models.OneToOneField("DocumentFile",
-                                on_delete=models.CASCADE,
-                                null=True,
-                                blank=True)
-    groups = models.ManyToManyField(Group)
+    roles = models.ManyToManyField("company.Role", related_name="docs")
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['company', 'documet_ref'],
-                                    name='unique_company_document'),
+            models.UniqueConstraint(fields=['ref', 'collection'],
+                                    name='unique_ref_collection'),
         ]
 
     def __str__(self) -> str:
-        return f"{self.mongodb_id} {self.documet_ref} {self.company}"
+        return f"{self.id} {self.collection}"
+
+
+class RequestDoc(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    document = models.ForeignKey(Document,
+                                 on_delete=models.CASCADE,
+                                 related_name="request_files")
+    created_at = models.DateTimeField("Дата заявки", auto_now_add=True)
+    text = models.TextField("Сообщение", null=True)
+    kind = models.IntegerField(
+        "Тип запроса")  # 0 - неопределенно, 1 - файл, 2 - редактирование
+    is_solved = models.BooleanField("Исполнено", default=False)
+    solved_at = models.DateTimeField("Дата исполнения")
