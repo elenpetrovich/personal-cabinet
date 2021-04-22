@@ -2,18 +2,18 @@
 {% load tags_mongo %}
 
 {% block content %}
-<h4>Список документов компании {{company.name}}</h4>
-{% for document in document_list %} 
-    <div class="card mt-2">
-        <div class="card-header">
-            <a href="{% url 'docs-detail' pk=document|ID %}?company={{company.name}}">{{ document.Название}}</a>
-        </div>
-        <div class="card-body">
-            {% for key, value in document.items %}
-                {{ key }}: {{ value }} <br>
-            {% endfor %}
-        </div>
+<h4>Список документов компании {{ company.full_name }} {{ collection.name }}</h4>
+{% for document in document_list %}
+<div class="card mt-2">
+    <div class="card-header">
+        <a href="{% url 'docs-detail' pk=document|ID %}?company={{company.name}}">{{ document.Название}}</a>
     </div>
+    <div class="card-body">
+        {% for key, value in document.items %}
+        {{ key }}: {{ value }} <br>
+        {% endfor %}
+    </div>
+</div>
 {% endfor %}
 
 {% endblock content %}

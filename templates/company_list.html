@@ -3,7 +3,7 @@
 {% block content %}
 <h4>Компании</h4>
 {% for company in company_list %}
-<a href="{% url 'docs-list' %}?company={{company.name}}">{{ company.name }}</a><br>
+<a href="{% url 'docs-list' %}?company={{company.name}}">{{ company.full_name }}</a><br>
 
 {% endfor %}
 {% endblock content %}

@@ -6,7 +6,7 @@
 <ul>
     {% for role in roles %}
     <a href="{% url 'docs-list' %}?company={{role.company.name}}">
-        <li>{{ role.company.name }} г. {{ role.company.city }}: {{ role.group.name }}</li>
+        <li>{{ role.name }} г. {{ role.company.short_name }}</li>
     </a>
     {% endfor %}
 </ul>

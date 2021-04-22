@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h4>Коллекции {{ company.short_name }}</h4>
+{% for collection in collection_list %}
+<a href="{% url 'docs-list' %}?company={{company.name}}">{{ collection.name }}</a><br>
+
+{% endfor %}
+{% endblock content %}
