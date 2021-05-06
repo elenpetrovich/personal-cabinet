@@ -26,7 +26,7 @@ class CompanyViewSet(viewsets.GenericViewSet):
     lookup_field = 'system_name'
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.queryset.filter().all())
+        queryset = self.filter_queryset(self.queryset.filter(collections__roles__users=self.request.user).all())
         serializer = self.get_serializer(queryset, many=True)
         return Response({"company_list": serializer.data},
                         template_name="company_list.html")
@@ -34,7 +34,7 @@ class CompanyViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        collection_queryset = Collection.objects.filter(company=instance).all()
+        collection_queryset = Collection.objects.filter(company=instance, roles__users=self.request.user).all()
         collection_serializer = CollectionSerializer(collection_queryset,
                                                      many=True)
         return Response(

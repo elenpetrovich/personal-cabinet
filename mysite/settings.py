@@ -82,7 +82,7 @@ DATABASES = {
     }
 }
 
-MONGODB = "mongodb://root:pass@192.168.0.100:27017"
+MONGODB = "mongodb://root:pass@10.42.0.1:27017"
 X_API_KEY = "123"
 
 # Password validation

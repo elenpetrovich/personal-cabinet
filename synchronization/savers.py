@@ -16,7 +16,8 @@ def save_doc(doc: dict, company, collection, pk: str = "Ref", **kwargs):
     if result.upserted_id:
         Document(id=str(result.upserted_id),
                  collection=collection,
-                 public=kwargs.get("public", False)).save()
+                 ref=doc[pk],
+                 is_public=kwargs.get("public", False)).save()
     return doc[pk], result.modified_count, str(result.upserted_id)
 
 
@@ -91,11 +92,12 @@ def save_file(file_obj: dict, company):
     return file_path, file_url, request
 
 
-def save_collection(collection_name: str, company, **kwargs) -> Collection:
+def save_collection(public_name: str, company, **kwargs) -> Collection:
     collection = Collection.objects.filter(company=company,
-                                           name=collection_name).first()
+                                           public_name=public_name).first()
     if collection is None:
-        collection = Collection(name=collection_name,
+        collection = Collection(public_name=public_name,
+                                link_name=kwargs.get("link_name", public_name),
                                 mongo_collection=kwargs.get(
                                     "mongo", get_random_string(12)),
                                 company=company)

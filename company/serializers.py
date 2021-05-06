@@ -13,7 +13,7 @@ class CompanySerializer(serializers.ModelSerializer):
             "city",
             "address",
             "email",
-            "public",
+            "is_public",
         )
         read_only_fields = ('id', )
 
@@ -26,7 +26,7 @@ class CompanyShortSerializer(serializers.ModelSerializer):
             "system_name",
             "short_name",
             "full_name",
-            "public",
+            "is_public",
         )
         read_only_fields = ('id', )
 
@@ -36,7 +36,8 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ('id', 'company', 'name')
+        fields = ('id', 'company', 'public_name', 'link_name')
+        read_only_fields = ('id', )
 
 
 class RoleSerializer(serializers.ModelSerializer):

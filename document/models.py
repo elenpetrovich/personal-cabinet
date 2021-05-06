@@ -11,7 +11,7 @@ client = MongoClient(MONGODB)
 
 class Document(models.Model):
     id = models.SlugField("ObjectID", max_length=24, primary_key=True)
-    ref = models.SlugField("Ref", max_length=34)
+    ref = models.SlugField("Ref", max_length=36)
     created_at = models.DateTimeField("Создан", auto_now_add=True)
     updated_at = models.DateTimeField("Изменен", auto_now=True)
     collection = models.ForeignKey("company.Collection",
@@ -19,10 +19,11 @@ class Document(models.Model):
                                    related_name="docs")
     is_public = models.BooleanField("Публичность", default=False)
 
-    file_folder = models.FileField("Путь до папки с файлами",
+    file_folder = models.CharField("Путь до папки с файлами",
                                    max_length=254,
                                    null=True,
-                                   default=None)
+                                   blank=True,
+                                   default="")
 
     roles = models.ManyToManyField("company.Role", related_name="docs")
 

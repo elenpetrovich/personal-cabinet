@@ -57,7 +57,7 @@ class CollectionUploadSerializer(serializers.Serializer):
 
 class DocListUploadSerializer(serializers.Serializer):
     name = serializers.CharField()
-    link_name = serializers.CharField()
+    link_name = serializers.CharField(required=False)
     docs = serializers.ListField(child=serializers.DictField(),
                                  allow_empty=True)
     prune_old = serializers.BooleanField(required=False, default=False)

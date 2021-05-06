@@ -24,9 +24,8 @@ class DocumentViewSet(viewsets.ViewSet):
     company_pk = "company_pk"
 
     def get_exclude_doc_list(self):
-        return []
         doc_perm = Document.objects.exclude(
-            roles__users=self.request.user).values_list('mongodb_id').all()
+            roles__users=self.request.user).values_list('id').all()
         return [ObjectId(x[0]) for x in list(doc_perm)]
 
     def is_allowed_doc(self, mongodb_id):
@@ -42,7 +41,7 @@ class DocumentViewSet(viewsets.ViewSet):
         self.get_company(**kwargs)
         self.collection = Collection.objects.filter(
             company=self.company,
-            name=kwargs.get("collection_pk", ""),
+            public_name=kwargs.get("collection_pk", ""),
             roles__users=self.request.user).first()
         if self.collection is None:
             raise exceptions.NotFound("Коллекция не найдена")
@@ -73,9 +72,9 @@ class DocumentViewSet(viewsets.ViewSet):
 
     def find_links(self, keys: list) -> list:
         result = []
-        for key in keys:
-            parts = key.split(".")
-            if parts[0] == attributes["links"]:
+        for key in keys: # "link0_Поставщик" - ссылка; "Поставщик" - значение
+            parts = key.split("0_")
+            if parts[0] == attributes["link"]:
                 result.append([key, parts[1]])
         return result
 
@@ -92,7 +91,7 @@ class DocumentViewSet(viewsets.ViewSet):
                     link_name=link[1]).first()
                 if collection is not None:
                     doc[f'{attributes["data"]}.{link[1]}'] = self.extend_links(
-                        self.get_mongodb().find_one({"Ref": doc[link[0]]}),
+                        self.get_mongodb(collection).find_one({"Ref": doc[link[0]]}),
                         depth=depth,
                         depth_max=depth_max,
                     )
@@ -106,7 +105,7 @@ class DocumentViewSet(viewsets.ViewSet):
                 search.update({query[1:]: str(request.query_params[query])})
         search.update({"_id": {"$nin": self.get_exclude_doc_list()}})
         data = []
-        for doc in self.get_mongodb().find():
+        for doc in self.get_mongodb().find(search):
             data.append(self.extend_links(doc, depth_max=1))
         return Response(
             {"document_list": data} | self.get_subdata(),

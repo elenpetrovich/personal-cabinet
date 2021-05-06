@@ -48,7 +48,11 @@ class SyncViewSet(viewsets.ViewSet):
         serializer = DocListUploadSerializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
         for number, upload in enumerate(serializer.validated_data):
-            collection = save_collection(upload["name"], self.company)
+            collection = save_collection(
+                upload["name"],
+                self.company,
+                link_name=upload.get("link_name"),
+            )
             data[f"{number}_{upload['name']}"] = []
             for doc in upload["docs"]:
                 new_doc = save_doc(doc, self.company, collection)
