@@ -6,6 +6,7 @@ Django
 2. pipenv shell
 3. python manage.py runserver 0.0.0.0:8000
 4. python manage.py migrate
+5. python manage.py createsuperuser
 
 # Docker
 - postgres
