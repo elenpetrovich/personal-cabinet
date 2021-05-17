@@ -6,7 +6,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.conf.urls.static import static
 from django.conf import settings
 
-from cabinet.views import UserViewSet, postData
+from cabinet.views import UserViewSet, postData, StartPageView
 from document.views import DocumentViewSet, FileRender
 from company.views import CompanyViewSet
 from synchronization.views import SyncViewSet
@@ -28,6 +28,7 @@ router.register(
     basename='docs')
 router.register(r'company', CompanyViewSet, basename="company")
 router.register(r'sync', SyncViewSet, basename="sync")
+router.register(r'start', StartPageView, basename="start")
 
 urlpatterns = [
     path('', include(router.urls)),

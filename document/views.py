@@ -32,10 +32,10 @@ class DocumentViewSet(viewsets.ViewSet):
         doc_perm = Document.objects.filter(id=mongodb_id).first()
         if doc_perm is None:
             raise exceptions.PermissionDenied("Документ не доступен")
-        elif doc_perm.public is False and Collection.objects.filter(
-                id=doc_perm.collection.id,
-                roles__users=self.request.user).first() is None:
-            raise exceptions.PermissionDenied("Документ не доступен")
+        # elif doc_perm.public is False and Collection.objects.filter(
+        #         id=doc_perm.collection.id,
+        #         roles__users=self.request.user).first() is None:
+        #     raise exceptions.PermissionDenied("Документ не доступен")
 
     def get_collection(self, **kwargs):
         self.get_company(**kwargs)

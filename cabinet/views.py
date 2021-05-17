@@ -25,6 +25,11 @@ class UserViewSet(viewsets.GenericViewSet):
                         template_name="user.html")
 
 
+class StartPageView(viewsets.ViewSet):
+
+    def list(self, request, *args, **kwargs):
+        return Response(template_name="start.html")
+
 @api_view(['GET', 'POST'])
 def postData(request):
     print(request.data)

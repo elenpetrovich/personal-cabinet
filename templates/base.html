@@ -21,16 +21,19 @@
 
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-style bg-style">
-        <a class="navbar-brand" href="{% url 'user-list' %}">PersonalOffice</a>
+    <nav class="navbar navbar-expand-sm navbar-style bg-style">
+        <a class="navbar-brand" href="{% url 'company-list' %}">PersonalOffice</a>
 
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mr-auto">
-                <a href="{% url 'company-list' %}">Компании</a>
+                <!-- <a href="{% url 'company-list' %}">Компании</a> -->
             </ul>
             <form class="form-inline my-2 my-lg-0">
                 {% if user.is_authenticated %}
-                ({{ user.username }})
+                <div class="mx-1 btn btn-outline-warning border border-white">
+                    <a href="#u" class="h7">{{ user.username }}</a>
+                    <a href="#n" class="badge badge-pill badge-dark">3</a>
+                </div>
                 <a href="{% url 'logout' %}" class="btn btn-outline-warning ml">Выйти</a>
                 {% else %}
                 <a href="{% url 'login' %}" class="btn btn-outline-warning">Войти</a>
@@ -38,7 +41,6 @@
             </form>
         </div>
     </nav>
-
     <div class="container bg-white rounded">
         {% block content %}
         <a href="{% url 'company-list' %}">Компании</a>
