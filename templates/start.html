@@ -1,35 +1,59 @@
-{% extends 'base.html' %} &nbsp;{% block content %}
-<h2>ИС "Универсальный личный кабинет 1С"</h2><p>
+{% extends 'base.html' %}
+{% load rest_framework %}
+{% block content %}
+<h2 class="mb-2">ИС "Универсальный личный кабинет 1С"</h2>
 
+{% if pk %}
+<div class="row alert alert-success" role="alert">
+  Заявка создана! {{ pk }}
+</div>
+{% elif error %}
+<div class="row alert alert-danger" role="alert">
+  Ошибка создания заявки! {{ error }}
+</div>
+{% endif %}
 
 <div class="row">
-    <div class="col-sm">
-        Интеграция сайта с платформой 1С существенно упрощает работу с данными 
-        путем автоматического обмена информацией между сайтом и 1С. 
-        Основными плюсами интеграции являются:<br> 
-        <ul>
-            <li>Актуальность данных путем регулярного обмена данными сайта и 1С.</li>
-            <li>Автоматическое формирование заказов и других документов 1С.</li>
-            <li>Возможность оперативного информирования клиентов о процессе выполнения заказа в 1С в реальном времени с просмотром всех этапов.</li>
-        </ul>
-
-    </div>
-    <div class="col-sm">
-        <h4>Оставьте заявку</h4>
-        <div class="mb-3">
-            <label for="formGroupExampleInput" class="form-label">Ваше ФИО</label>
-            <input type="text" class="form-control" id="formGroupExampleInput" placeholder="Иванов Иван Иванович">
-          </div>
-          <div class="mb-3">
-            <label for="formGroupExampleInput2" class="form-label">Почта</label>
-            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="test@test.ru">
-          </div>
-          <div class="mb-3">
-            <label for="formGroupExampleInput2" class="form-label">Телефон</label>
-            <input type="text" class="form-control" id="formGroupExampleInput2" placeholder="+7 (800) 555 35 35">
-          </div>
-          <button type="submit" class="btn btn-warning">Отправить</button>
-    </div>
+  {% if user.is_authenticated %}
+  <h3>Новости:</h3>
+  <ul>
+    <li>1</li>
+    <li>2</li>
+    <li>3</li>
+  </ul>
+  {% else %}
+  <div class="col-sm">
+    Интеграция сайта с платформой 1С существенно упрощает работу с данными
+    путем автоматического обмена информацией между сайтом и 1С.
+    Основными плюсами интеграции являются:<br>
+    <ul>
+      <li>Актуальность данных путем регулярного обмена данными сайта и 1С.</li>
+      <li>Автоматическое формирование заказов и других документов 1С.</li>
+      <li>Возможность оперативного информирования клиентов о процессе выполнения заказа в 1С в реальном времени с
+        просмотром всех этапов.</li>
+    </ul>
+  </div>
+  <div class="col-sm">
+    <form action="{% url 'start-list' %}" method="POST">
+      <h4>Оставьте заявку</h4>
+      <div class="mb-3">
+        {% csrf_token %}
+        <label for="fio" class="form-label">Ваше ФИО</label>
+        <input type="text" required class="form-control" id="fio" name="fio" placeholder="Иванов Иван Иванович">
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Почта</label>
+        <input type="email" required class="form-control" id="email" name="email" placeholder="test@test.ru">
+      </div>
+      <div class="mb-3">
+        <label for="phone" class="form-label">Телефон</label>
+        <input type="tel" required pattern="[0-9]{6-12}" class="form-control" id="phone" name="phone"
+          placeholder="8 (800) 555 35 35">
+      </div>
+      <button type="submit" class="btn btn-warning">Отправить</button>
+    </form>
+    {% endif %}
+  </div>
 </div>
 
 {% endblock content %}

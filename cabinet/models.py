@@ -41,3 +41,11 @@ class AccountModelBackend(ModelBackend):
             return Account.objects.get(pk=user_id)
         except Account.DoesNotExist:
             return None
+
+
+class RegistrationRequest(models.Model):
+    fio = models.CharField("ФИО", max_length=511)
+    email = models.EmailField("Электронная почта")
+    phone = models.CharField("Номер телефона", max_length=12)
+    date = models.DateTimeField("Дата", auto_now_add=True)
+    ip = models.GenericIPAddressField("IP")

@@ -5,6 +5,7 @@ from rest_framework import routers
 from django.contrib.auth.views import LoginView, LogoutView
 from django.conf.urls.static import static
 from django.conf import settings
+from django.shortcuts import redirect
 
 from cabinet.views import UserViewSet, postData, StartPageView
 from document.views import DocumentViewSet, FileRender
@@ -14,6 +15,12 @@ from synchronization.views import SyncViewSet
 
 class TemaplteAPIView(routers.APIRootView):
     template_name = 'base.html'
+
+    def get(self, request, *args, **kwargs):
+        if request.query_params.get("format", "html") == "html":
+            return redirect("start-list")
+        else:
+            return super().get(request=request, args=args, kwargs=kwargs)
 
 
 class TempaleRouter(routers.DefaultRouter):

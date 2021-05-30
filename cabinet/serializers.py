@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Account
+from .models import Account, RegistrationRequest
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -18,4 +18,15 @@ class AccountSerializer(serializers.ModelSerializer):
             'id',
             'is_active',
             'groups',
+        )
+
+
+class RegistrationRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RegistrationRequest
+        fields = '__all__'
+        read_only_fields = (
+            'id',
+            'date',
+            'ip',
         )
