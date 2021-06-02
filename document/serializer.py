@@ -1,14 +1,16 @@
 from rest_framework import serializers
-# from .models import DocumentFile
+from .models import RequestDoc
 
-# class DocumentFileSerializers(serializers.ModelSerializer):
-#     class Meta:
-#         model = DocumentFile
-#         fields = (
-#             'id',
-#             'saved',
-#             'file_path',
-#             'requested_date',
-#             'saved_file_date',
-#         )
-#         read_only_fields = ('id', )
+
+class RequestDocSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequestDoc
+        fields = '__all__'
+        read_only_fields = (
+            'created_at',
+            'solved_at',
+            'is_solved',
+            'document',
+            'user',
+            'id',
+        )

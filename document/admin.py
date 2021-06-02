@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import Document
+from .models import Document, RequestDoc
 
 
-@admin.register(Document)
+@admin.register(Document, RequestDoc)
 class DocumentAdmin(admin.ModelAdmin):
     pass

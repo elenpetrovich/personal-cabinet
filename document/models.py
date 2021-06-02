@@ -71,10 +71,13 @@ class RequestDoc(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     document = models.ForeignKey(Document,
                                  on_delete=models.CASCADE,
-                                 related_name="request_files")
+                                 related_name="request_list")
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name="request_list")
     created_at = models.DateTimeField("Дата заявки", auto_now_add=True)
     text = models.TextField("Сообщение", null=True)
     kind = models.IntegerField(
         "Тип запроса")  # 0 - неопределенно, 1 - файл, 2 - редактирование
     is_solved = models.BooleanField("Исполнено", default=False)
-    solved_at = models.DateTimeField("Дата исполнения")
+    solved_at = models.DateTimeField("Дата исполнения", null=True, blank=True)
