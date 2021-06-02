@@ -152,32 +152,47 @@ class DocumentViewSet(viewsets.ViewSet):
 
 
 class FileRender():
-    category_name = {
-        "all": ["all", "все", "общий"],
-        "user": ["private", "сотрудники", "приватный"],
-    }
+    @classmethod
+    def is_allowed_doc(cls, user, mongodb_id) -> Document:
+        document_config = Document.objects.filter(id=mongodb_id).annotate(
+            roles_user_count=Count(
+                "roles",
+                filter=Q(roles__users=user),
+            ),
+            roles_count=Count("roles"),
+        ).first()
+        if document_config is None:
+            raise exceptions.PermissionDenied("Нет доступа к файлу")
+        elif document_config.is_public is False and document_config.roles_user_count == 0:
+            raise exceptions.PermissionDenied("Нет доступа к файлу")
+        return document_config
 
     @classmethod
-    def serve_with_permissions(cls,
+    def serve_with_permissions(
+        cls,
                                request,
                                path,
                                document_root=None,
-                               show_indexes=False):
+        show_indexes=False,
+    ):
         if request.user.is_authenticated:
-            path_parts = path.split("/")
-            if len(path_parts) == 3:  # company/category/file.name
-                if path_parts[1] in cls.category_name["all"]:
-                    pass
-                elif path_parts[1] in cls.category_name["user"]:
-                    company = Company.objects.filter(
-                        name=path_parts[0], users=request.user).first()
-                    if company is None:
-                        raise PermissionDenied
-                else:
-                    company = Company.objects.filter(
-                        name=path_parts[0], users=request.user).first()
-                    if company is None:
-                        raise PermissionDenied
-                    print(path_parts[2])
             return serve(request, path, document_root, show_indexes)
+        else:
         raise PermissionDenied
+
+    @classmethod
+    def serve_document_folder(cls,
+                              request,
+                              document_root=None,
+                              show_indexes=None,
+                              **kwargs):
+        if request.user.is_authenticated:
+            config = cls.is_allowed_doc(request.user,
+                                        kwargs.get("document_pk"))
+            return serve(
+                request,
+                f"{config.file_folder}/{kwargs.get('file_name')}",
+                document_root,
+                show_indexes=True,
+            )
+        raise PermissionDenied("Нет доступа к файлу")

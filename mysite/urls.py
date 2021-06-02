@@ -4,11 +4,12 @@ from django.views.generic.base import RedirectView
 from rest_framework import routers
 from django.contrib.auth.views import LoginView, LogoutView
 from django.conf.urls.static import static
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.conf import settings
 from django.shortcuts import redirect
 
 from cabinet.views import UserViewSet, postData, StartPageView
-from document.views import DocumentViewSet, FileRender
+from document.views import DocumentViewSet, FileRender, DocumentRequestViewSet
 from company.views import CompanyViewSet
 from synchronization.views import SyncViewSet
 
@@ -30,6 +31,10 @@ class TempaleRouter(routers.DefaultRouter):
 router = TempaleRouter()
 router.register(r'user', UserViewSet, basename='user')
 router.register(
+    r'company/(?P<company_pk>[^/.]+)/(?P<collection_pk>[^/.]+)/requests/(?P<document_pk>[^/.]+)',
+    DocumentRequestViewSet,
+    basename='requests')
+router.register(
     r'company/(?P<company_pk>[^/.]+)/(?P<collection_pk>[^/.]+)/docs',
     DocumentViewSet,
     basename='docs')
@@ -47,6 +52,12 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     re_path(r'^favicon\.ico$',
             RedirectView.as_view(url='static/favicon.ico', permanent=True)),
-] + static(settings.MEDIA_URL,
-           FileRender.serve_with_permissions,
-           document_root=settings.MEDIA_ROOT)
+] + [
+    re_path(r"^media/files/(?P<document_pk>[^/.]+)/(?P<file_name>.*)",
+            FileRender.serve_document_folder,
+            name='files',
+            kwargs={"document_root": settings.MEDIA_ROOT}),
+]
+# + static(settings.MEDIA_URL,
+#            FileRender.serve_with_permissions,
+#            document_root=settings.MEDIA_ROOT)
