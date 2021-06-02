@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
 from django.contrib.auth.backends import ModelBackend
 
 from company.models import Collection, Role, Company
@@ -40,6 +40,20 @@ class AccountModelBackend(ModelBackend):
             return Account.objects.get(pk=user_id)
         except Account.DoesNotExist:
             return None
+
+
+class AccountController(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="controller",
+    )
+    company_creator = models.ForeignKey(
+        Company,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="accounts",
+    )
 
 
 class RegistrationRequest(models.Model):
