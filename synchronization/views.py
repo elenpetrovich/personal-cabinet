@@ -1,5 +1,5 @@
 import re
-from rest_framework import serializers, viewsets, exceptions
+from rest_framework import viewsets, exceptions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import permissions
@@ -73,21 +73,21 @@ class SyncUserViewSet(SyncViewMixin):
     def save_or_edit(self, data):
         user = Account.objects.filter(
             controller__user__username=data.get("username")).first()
+        new_password = get_random_string(8)
         if user is None:
             serializer = UserUploadSerializer(data=data)
             serializer.is_valid(raise_exception=True)
             user = serializer.save(
                 username=
                 f'{data.get("username")}_{self.company.id}_{get_random_string(3)}',
-                password=make_password(
-                    data.get("password", get_random_string(8))),
+                password=make_password(new_password),
             )
             AccountController(user=user, company_creator=self.company).save()
         else:
             serializer = UserUploadSerializer(user, data=data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
-        return serializer.data
+        return dict(serializer.data) | {"password": new_password}
 
 
 class SyncCollectionViewSet(SyncViewMixin):

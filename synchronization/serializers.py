@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from company.models import Company, Collection
 from document.models import RequestDoc
+from cabinet.models import Account
 
 
 class CompanyUploadSerializer(serializers.ModelSerializer):
@@ -24,12 +25,17 @@ class CompanyUploadSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'system_name', 'url_name')
 
 
-class UserUploadSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField(allow_blank=True, required=False)
-    first_name = serializers.CharField(allow_blank=True, required=False)
-    last_name = serializers.CharField(allow_blank=True, required=False)
-    email = serializers.CharField(allow_blank=True, required=False)
+class UserUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = (
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'email',
+        )
+        read_only_fields = ('id', )
 
 
 class CollectionUploadSerializer(serializers.ModelSerializer):
