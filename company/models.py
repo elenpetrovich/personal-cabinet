@@ -29,7 +29,7 @@ class Company(models.Model):
     okpo = models.CharField("ОКПО", max_length=12, null=True, blank=True)
 
     def __str__(self) -> str:
-        return f"{self.system_name} {self.short_name} г. {self.city}"
+        return f"{self.short_name} г. {self.city}"
 
 
 class Collection(models.Model):

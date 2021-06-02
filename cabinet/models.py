@@ -55,6 +55,9 @@ class AccountController(models.Model):
         related_name="accounts",
     )
 
+    def __str__(self) -> str:
+        return f"{self.user} ({self.company_creator})"
+
 
 class RegistrationRequest(models.Model):
     fio = models.CharField("ФИО", max_length=511)
@@ -62,3 +65,6 @@ class RegistrationRequest(models.Model):
     phone = models.CharField("Номер телефона", max_length=12)
     date = models.DateTimeField("Дата", auto_now_add=True)
     ip = models.GenericIPAddressField("IP")
+
+    def __str__(self) -> str:
+        return f"{self.fio} {self.date.date()}"

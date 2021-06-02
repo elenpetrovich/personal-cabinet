@@ -81,3 +81,6 @@ class RequestDoc(models.Model):
         "Тип запроса")  # 0 - неопределенно, 1 - файл, 2 - редактирование
     is_solved = models.BooleanField("Исполнено", default=False)
     solved_at = models.DateTimeField("Дата исполнения", null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.document} {self.is_solved} {self.kind}"
