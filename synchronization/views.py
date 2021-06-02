@@ -1,12 +1,21 @@
-from rest_framework import viewsets, exceptions
+import re
+from rest_framework import serializers, viewsets, exceptions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import permissions
 
+from django.utils.crypto import get_random_string
+from django.contrib.auth.hashers import make_password
+
+from django.core.files.storage import default_storage
+from django.utils import timezone
+from bson import ObjectId
+
 from mysite.settings import X_API_KEY
-from company.models import Company, Collection
-from .serializers import FileUploadSerializers, RoleUploadSerializer, UserUploadSerializer, CompanyUploadSerializer, CollectionUploadSerializer, DocListUploadSerializer, FileRequestSerializers
-from .savers import save_doc, save_role, save_file, save_collection, get_file_request, save_user
+from company.models import Company, Collection, Role
+from document.models import RequestDoc, Document, client
+from cabinet.models import Account, AccountController
+from .serializers import FileUploadSerializers, RoleUploadSerializer, UserUploadSerializer, CompanyUploadSerializer, CollectionUploadSerializer, DocListUploadSerializer, RequestDocUploadSerializer
 
 
 class ByHeaderKeyOrAdmin(permissions.BasePermission):
@@ -17,14 +26,14 @@ class ByHeaderKeyOrAdmin(permissions.BasePermission):
         # return False
 
 
-class SyncViewSet(viewsets.ViewSet):
+class SyncViewMixin(viewsets.ViewSet):
     permission_classes = [ByHeaderKeyOrAdmin]
 
-    def get_collection(self, collection_name):
+    def get_collection(self, url_name):
         if self.company is not None:
             return Collection.objects.filter(company=self.company,
-                                             name=collection_name).first()
-        return None
+                                             url_name=url_name).first()
+        raise exceptions.NotFound("Коллекция не найдена")
 
     def get_company(self):
         self.company = Company.objects.filter(
@@ -38,54 +47,12 @@ class SyncViewSet(viewsets.ViewSet):
     def verify_key(self, company_key: str, input_key: str):
         return company_key == input_key
 
-    def list(self, request):
-        return Response({})
+    def save_or_edit(self, data):
+        return data
 
-    @action(detail=False, methods=['post'], url_path="docs", url_name="docs")
-    def sync_docs(self, request):
-        self.get_company()
-        data = {}
-        serializer = DocListUploadSerializer(data=request.data, many=True)
-        serializer.is_valid(raise_exception=True)
-        for number, upload in enumerate(serializer.validated_data):
-            collection = save_collection(
-                upload["name"],
-                self.company,
-                link_name=upload.get("link_name"),
-            )
-            data[f"{number}_{upload['name']}"] = []
-            for doc in upload["docs"]:
-                new_doc = save_doc(doc, self.company, collection)
-                data[f"{number}_{upload['name']}"].append(new_doc)
-        return Response(data)
 
-    @action(detail=False, methods=['post'], url_path="users", url_name="users")
-    def sync_users(self, request, *args, **kwargs):
-        self.get_company()
-        data = {}
-        serializer = UserUploadSerializer(data=request.data, many=True)
-        serializer.is_valid(raise_exception=True)
-        for number, user in enumerate(serializer.validated_data):
-            new_user = save_user(user, self.company)
-            data[str(number)].append(new_user)
-        return Response(data)
-
-    @action(detail=False, methods=['post'], url_path="roles", url_name="roles")
-    def sync_roles(self, request, *args, **kwargs):
-        self.get_company()
-        data = {}
-        serializer = RoleUploadSerializer(data=request.data, many=True)
-        serializer.is_valid(raise_exception=True)
-        for number, upload in enumerate(serializer.validated_data):
-            role = save_role(upload, self.company)
-            data[f"{number}_{upload['name']}"].append(role)
-        return Response(data)
-
-    @action(detail=False,
-            methods=['post'],
-            url_path="company",
-            url_name="company")
-    def sync_company(self, request, *args, **kwargs):
+class SyncCompanyViewSet(SyncViewMixin):
+    def create(self, request, *args, **kwargs):
         self.get_company()
         serializer = CompanyUploadSerializer(self.company,
                                              data=request.data,
@@ -94,29 +61,181 @@ class SyncViewSet(viewsets.ViewSet):
         serializer.save()
         return Response(serializer.data)
 
-    @action(detail=False, methods=['post'], url_path="file", url_name="file")
-    def sync_file(self, request, *args, **kwargs):
+
+class SyncUserViewSet(SyncViewMixin):
+    def create(self, request, *args, **kwargs):
+        self.get_company()
+        try:
+            return Response(self.save_or_edit(request.data))
+        except Exception as e:
+            raise exceptions.APIException(e)
+
+    def save_or_edit(self, data):
+        user = Account.objects.filter(
+            controller__user__username=data.get("username")).first()
+        if user is None:
+            serializer = UserUploadSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.save(
+                username=
+                f'{data.get("username")}_{self.company.id}_{get_random_string(3)}',
+                password=make_password(
+                    data.get("password", get_random_string(8))),
+            )
+            AccountController(user=user, company_creator=self.company).save()
+        else:
+            serializer = UserUploadSerializer(user, data=data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        return serializer.data
+
+
+class SyncCollectionViewSet(SyncViewMixin):
+    def create(self, request, *args, **kwargs):
+        self.get_company()
+        try:
+            return Response(self.save_or_edit(request.data))
+        except Exception as e:
+            raise exceptions.APIException(e)
+
+    def save_or_edit(self, data):
+        collection = Collection.objects.filter(
+            company=self.company, url_name=data.get("url_name")).first()
+        if collection is None:
+            serializer = CollectionUploadSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(
+                company=self.company,
+                mongo_collection=
+                f'{serializer.validated_data.get("url_name")}_{get_random_string("4")}'
+            )
+        else:
+            serializer = CollectionUploadSerializer(collection,
+                                                    data=data,
+                                                    partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        return serializer.data
+
+
+class SyncRoleViewSet(SyncViewMixin):
+    def create(self, request, *args, **kwargs):
+        self.get_company()
+        try:
+            return Response(self.save_or_edit(request.data))
+        except Exception as e:
+            raise exceptions.APIException(e)
+
+    def save_or_edit(self, data):
+        serializer = RoleUploadSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        role = Role.objects.get_or_create(name=data.get("name"),
+                                          company=self.company)
+        if data.get("delete_old_collections", False):
+            role.collections_set.clear()
+        if data.get("delete_old_users", False):
+            role.users_set.clear()
+        for url_name in data.get("collections_list", []):
+            role.collections.add(
+                Collection.objects.filter(company=self.company,
+                                          url_name=url_name).first())
+        for username in data.get("username_list", []):
+            role.users.add(
+                Account.objects.filter(controller__company=self.company,
+                                       username=username).first())
+        return serializer
+
+
+class SyncDocsViewSet(SyncViewMixin):
+    def create(self, request):
+        self.get_company()
+        self.collection = self.get_collection(request.data.get("url_name", ""))
+        try:
+            return Response(self.save_or_edit_list(request.data))
+        except Exception as e:
+            raise exceptions.APIException(e)
+
+    def save_or_edit_list(self, data):
+        serializer = DocListUploadSerializer(data=data, many=True)
+        serializer.is_valid(raise_exception=True)
+        result = {}
+        if serializer.validated_data.get("delete_old", False):
+            client.get_database(self.company.mongo_db).get_collection(
+                self.collection.mongo_collection).delete_many({})
+        roles = Role.objects.filter(
+            company=self.company,
+            name__in=serializer.validated_data.get("role_list", []),
+        ).all()
+        for number, doc in enumerate(serializer.validated_data.get("docs",
+                                                                   [])):
+            sub_result, doc = self.save_or_edit(doc)
+            if doc is not None:
+                for role in roles:
+                    doc.roles.add(role)
+            result[number] = {
+                "is_new": bool(sub_result.upserted_id),
+                "new_id": doc.upserted_id,
+            }
+        return result
+
+    def save_or_edit(self, data):
+        ref = data.get("Ref")
+        doc = None
+        result = client.get_database(self.company.mongo_db).get_collection(
+            self.collection.mongo_collection).replace_one({"Ref": ref}, data,
+                                                          True)
+        if result.upserted_id:
+            doc = Document(id=str(result.upserted_id),
+                           ref=ref,
+                           collection=self.collection,
+                           file_folder=None)
+            doc.folder = None
+            doc.save()
+        return result, doc
+
+
+class SyncDocsFileViewSet(SyncViewMixin):
+    def create(self, request, *args, **kwargs):
         self.get_company()
         serializer = FileUploadSerializers(data=request.data)
         serializer.is_valid(raise_exception=True)
-        file_path, file_url, request = save_file(serializer.validated_data,
-                                                 self.company)
-        return Response({"url": file_url, "file_name": file_path})
+        file_path = self.save_or_edit(serializer.validated_data)
+        return Response({"file_path": file_path})
 
-    @action(detail=False,
-            methods=['get'],
-            url_path="file_request",
-            url_name="file_request")
-    def sync_file_request(self, request, *args, **kwargs):
-        self.get_company()
-        serializer = FileRequestSerializers(get_file_request(self.company),
-                                            many=True)
-        return Response(data=serializer.data)
+    def save_or_edit(self, data):
+        doc = Document.objects.filter(
+            ref=data.get("ref"), collection__company=self.company).first()
+        if doc is not None:
+            name = data["file_data"].name
+            if data.get("file_name"):
+                name = data.get("file_name")
+            print(name)
+            file_path = default_storage.save(
+                f"{str(doc.folder)}/{name}",
+                data["file_data"],
+            )
+        return file_path
 
-    @action(detail=False,
-            methods=['get'],
-            url_path="docs_request",
-            url_name="docs_request")
-    def sync_docs_request(self, request, *args, **kwargs):
+
+class SyncDocsRequestsViewSet(SyncViewMixin):
+    def list(self, request, *args, **kwargs):
         self.get_company()
-        return Response(data={})
+        queryset = RequestDoc.objects.filter(
+            document__collection__company=self.company,
+            kind=request.query_params.get("kind", 0)).all()
+        serializer = RequestDocUploadSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        self.get_company()
+        instance = RequestDoc.objects.filter(
+            id=kwargs.get("pk"),
+            document__collection__company=self.company).first()
+        if not instance:
+            raise exceptions.NotFound("Заявка не найдена")
+        serializer = RequestDocUploadSerializer(instance,
+                                                data=request.data,
+                                                partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

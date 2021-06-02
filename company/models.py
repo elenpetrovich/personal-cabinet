@@ -46,6 +46,12 @@ class Collection(models.Model):
                                 on_delete=models.CASCADE,
                                 related_name="collections")
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['url_name', 'company'],
+                                    name='unique_url_name_company'),
+        ]
+
     def __str__(self) -> str:
         return f"{self.public_name} ({self.company})"
 
@@ -58,6 +64,12 @@ class Role(models.Model):
     users = models.ManyToManyField(User, related_name="roles")
     collections = models.ManyToManyField("company.Collection",
                                          related_name="roles")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'company'],
+                                    name='unique_name_company'),
+        ]
 
     def __str__(self) -> str:
         return f"{self.name} ({self.company})"

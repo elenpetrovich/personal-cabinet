@@ -20,12 +20,6 @@ from .serializer import RequestDocSerializer
 from company.models import Company, Collection
 from company.serializers import CompanySerializer, CollectionSerializer
 
-attributes = {
-    "link": "link",
-    "secret": "secret",
-    "data": "data",
-}  #TODO: или в бд добавить правило для коллекции
-
 
 class DocumentMixin():
     def get_allowed_doc_list(self):
@@ -85,7 +79,7 @@ class DocumentViewSet(viewsets.ViewSet, DocumentMixin):
         result = []
         for key in keys:  # "link0_Поставщик" - ссылка; "Поставщик" - значение
             parts = key.split("0_")
-            if parts[0] == attributes["link"]:
+            if parts[0] == "link":
                 result.append([key, parts[1]])
         return result
 
@@ -101,7 +95,7 @@ class DocumentViewSet(viewsets.ViewSet, DocumentMixin):
                 collection = Collection.objects.filter(
                     link_name=link[1]).first()
                 if collection is not None:
-                    doc[f'{attributes["data"]}.{link[1]}'] = self.extend_links(
+                    doc[f'data.{link[1]}'] = self.extend_links(
                         self.get_mongodb(collection).find_one(
                             {"Ref": doc[link[0]]}),
                         depth=depth,

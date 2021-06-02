@@ -11,7 +11,7 @@ from django.shortcuts import redirect
 from cabinet.views import UserViewSet, postData, StartPageView
 from document.views import DocumentViewSet, FileRender, DocumentRequestViewSet
 from company.views import CompanyViewSet
-from synchronization.views import SyncViewSet
+from synchronization.views import SyncCompanyViewSet, SyncCollectionViewSet, SyncUserViewSet, SyncRoleViewSet, SyncDocsViewSet, SyncDocsFileViewSet, SyncDocsRequestsViewSet
 
 
 class TemaplteAPIView(routers.APIRootView):
@@ -27,20 +27,83 @@ class TemaplteAPIView(routers.APIRootView):
 class TempaleRouter(routers.DefaultRouter):
     APIRootView = TemaplteAPIView
 
+    routes = [
+        routers.Route(url=r'^{prefix}{trailing_slash}$',
+                      mapping={
+                          'get': 'list',
+                          'post': 'create'
+                      },
+                      name='{basename}-list',
+                      detail=False,
+                      initkwargs={'suffix': 'List'}),
+        routers.DynamicRoute(url=r'^{prefix}/{url_path}{trailing_slash}$',
+                             name='{basename}-{url_name}',
+                             detail=False,
+                             initkwargs={}),
+        routers.Route(url=r'^{prefix}/{lookup}{trailing_slash}$',
+                      mapping={
+                          'get': 'retrieve',
+                      },
+                      name='{basename}-detail',
+                      detail=True,
+                      initkwargs={'suffix': 'Instance'}),
+        routers.Route(url=r'^{prefix}/{lookup}/update{trailing_slash}$',
+                      mapping={
+                          'get': 'page_update',
+                          'post': 'partial_update',
+                      },
+                      name='{basename}-update',
+                      detail=True,
+                      initkwargs={'suffix': 'Instance'}),
+        routers.Route(url=r'^{prefix}/{lookup}/delete{trailing_slash}$',
+                      mapping={
+                          'get': 'page_delete',
+                          'post': 'destroy',
+                      },
+                      name='{basename}-delete',
+                      detail=True,
+                      initkwargs={'suffix': 'Instance'}),
+        routers.DynamicRoute(
+            url=r'^{prefix}/{lookup}/{url_path}{trailing_slash}$',
+            name='{basename}-{url_name}',
+            detail=True,
+            initkwargs={}),
+    ]
+
 
 router = TempaleRouter()
 router.register(r'user', UserViewSet, basename='user')
 router.register(
     r'company/(?P<company_pk>[^/.]+)/(?P<collection_pk>[^/.]+)/requests/(?P<document_pk>[^/.]+)',
     DocumentRequestViewSet,
-    basename='requests')
+    basename='requests',
+)
 router.register(
     r'company/(?P<company_pk>[^/.]+)/(?P<collection_pk>[^/.]+)/docs',
     DocumentViewSet,
-    basename='docs')
+    basename='docs',
+)
 router.register(r'company', CompanyViewSet, basename="company")
-router.register(r'sync', SyncViewSet, basename="sync")
 router.register(r'start', StartPageView, basename="start")
+router.register(r'sync/company', SyncCompanyViewSet, basename="sync-company")
+router.register(
+    r'sync/collection',
+    SyncCollectionViewSet,
+    basename="sync-collection",
+)
+router.register(r'sync/user', SyncUserViewSet, basename="sync-user")
+router.register(r'sync/role', SyncRoleViewSet, basename="sync-role")
+router.register(r'sync/docs', SyncDocsViewSet, basename="sync-docs")
+router.register(
+    r'sync/docs/file',
+    SyncDocsFileViewSet,
+    basename="sync-docs-file",
+)
+router.register(
+    r'sync/docs/requests',
+    SyncDocsRequestsViewSet,
+    basename="sync-docs-requests",
+)
 
 urlpatterns = [
     path('', include(router.urls)),
