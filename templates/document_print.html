@@ -2,8 +2,26 @@
 {% load tags_mongo %}
 
 {% block content %}
-<h4>Документ: {{ document.Название }}</h4>
-{% for key, value in document.items %}
-    {{ key }}: {{ value }}
+
+{% if file_request %}
+<div class="row alert alert-success" role="alert">
+    {% if first_request %}
+    Заявка создана! {{ file_request.id }}
+    {% else %}
+    Заявка не рассмотрена! {{ file_request.id }}
+    {% endif %}
+</div>
+{% endif %}
+
+<h4 class="mb-3">Список доступных файлов: {{ document_id }}</h4>
+
+{% for f, time in file_list %}
+<li>
+    <a href="{% url 'files' document_pk=document_id file_name=f|urlencode %}">
+        {{ f }}
+        {{ time|date:"SHORT_DATE_FORMAT" }}
+    </a>
+</li>
 {% endfor %}
+
 {% endblock content %}

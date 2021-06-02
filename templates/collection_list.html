@@ -3,7 +3,9 @@
 {% block content %}
 <h4>Коллекции {{ company.short_name }}</h4>
 {% for collection in collection_list %}
-<a href="{% url 'docs-list' company_pk=company.system_name collection_pk=collection.public_name %}">{{ collection.public_name }}</a><br>
+<a href="{% url 'docs-list' company_pk=company.url_name collection_pk=collection.url_name %}">
+    {{ collection.public_name}}
+</a><br>
 
 {% endfor %}
 {% endblock content %}

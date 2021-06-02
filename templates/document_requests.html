@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load rest_framework %}
+{% block content %}
+<h2 class="mb-2">Создание заявки</h2>
+
+{% if pk %}
+<div class="row alert alert-success" role="alert">
+    Заявка создана! {{ pk }}
+</div>
+{% elif error %}
+<div class="row alert alert-danger" role="alert">
+    Ошибка создания заявки! {{ error }}
+</div>
+{% endif %}
+
+<div class="row">
+    <form action="{% url 'requests-list' company_pk=company_pk collection_pk=collection_pk document_pk=document_pk %}"
+        method="POST">
+        <h4>Оставьте заявку</h4>
+        <div class="mb-3">
+            {% csrf_token %}
+            <label for="text" class="form-label">Текст</label>
+            <textarea required id="text" name="text" class="form-control" placeholder="Что исправить"></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="kind" class="form-label">Почта</label>
+            <input type="number" required class="form-control" id="kind" name="kind" placeholder="2">
+        </div>
+        <button type="submit" class="btn btn-warning">Отправить</button>
+    </form>
+</div>
+{% endblock content %}

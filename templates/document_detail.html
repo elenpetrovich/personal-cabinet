@@ -3,7 +3,5 @@
 
 {% block content %}
 <h4>{{ document.Number }}</h4>
-{% for key, value in document.items %}
-    {{ key }}: {{ value }} <br>
-{% endfor %}
+{% line_up values=document schema=collection.schema %}
 {% endblock content %}
