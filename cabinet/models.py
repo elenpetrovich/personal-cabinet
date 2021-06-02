@@ -13,25 +13,24 @@ class Account(User):
         if company is None:
             return Role.objects.filter(users=self).all()
         elif role is None:
-            return Role.objects.filter(users=self, system_name=company).all()
+            return Role.objects.filter(users=self, url_name=company).all()
         else:
-            return Role.objects.filter(users=self,
-                                       system_name=company,
+            return Role.objects.filter(users=self, url_name=company,
                                        name=role).all()
 
     def get_companies(self, company: str = None, role: str = None):
         if company is None:
             return Company.objects.filter(roles__users=self).distinct().all()
         elif role is None:
-            return Company.objects.filter(system_name=company,
+            return Company.objects.filter(url_name=company,
                                           roles__users=self).distinct().all()
         else:
-            return Company.objects.filter(system_name=company,
+            return Company.objects.filter(url_name=company,
                                           roles__users=self,
                                           roles__name=role).distinct().all()
 
     def get_collection(self, company: str = None, collection: str = None):
-        return Company.objects.filter(system_name=company,
+        return Company.objects.filter(url_name=company,
                                       roles__users=self).distinct().all()
 
 

@@ -8,11 +8,17 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = (
             'id',
             "system_name",
-            "short_name",
-            "full_name",
+            'url_name',
             "city",
             "address",
             "email",
+            "address",
+            "inn",
+            "kpp",
+            "ogrp",
+            "okpo",
+            "short_name",
+            "full_name",
             "is_public",
         )
         read_only_fields = ('id', )
@@ -27,6 +33,7 @@ class CompanyShortSerializer(serializers.ModelSerializer):
             "short_name",
             "full_name",
             "is_public",
+            'url_name',
         )
         read_only_fields = ('id', )
 
@@ -36,7 +43,8 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ('id', 'company', 'public_name', 'link_name')
+        fields = ('id', 'company', 'public_name', 'link_name', 'schema',
+                  'url_name')
         read_only_fields = ('id', )
 
 
