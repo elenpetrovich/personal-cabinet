@@ -7,7 +7,6 @@ class CompanySerializer(serializers.ModelSerializer):
         model = Company
         fields = (
             'id',
-            "system_name",
             'url_name',
             "city",
             "address",
@@ -29,7 +28,6 @@ class CompanyShortSerializer(serializers.ModelSerializer):
         model = Company
         fields = (
             'id',
-            "system_name",
             "short_name",
             "full_name",
             "is_public",

@@ -2,11 +2,11 @@
 
 {% block content %}
 <h1>Здравствуйте, {{ account.username }}</h1>
-<h2>Ваши роли:</h2>
+<h4>Ваши роли:</h4>
 <ul>
     {% for role in roles %}
-    <a href="{% url 'docs-list' %}?company={{role.company.name}}">
-        <li>{{ role.name }} г. {{ role.company.short_name }}</li>
+    <a href="{% url 'company-detail' url_name=role.company.url_name %}">
+        <li>{{ role.name }} в компании {{ role.company.short_name }}</li>
     </a>
     {% endfor %}
 </ul>

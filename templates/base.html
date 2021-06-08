@@ -30,9 +30,11 @@
             </ul>
             <form class="form-inline my-2 my-lg-0">
                 {% if user.is_authenticated %}
-                <div class="mx-1 btn btn-outline-warning border border-white">
-                    <a href="#u" class="h7">{{ user.username }}</a>
-                    <a href="#n" class="badge badge-pill badge-dark">3</a>
+                <div class="mx-1 p-0 btn btn-outline-warning border border-white">
+                    <a href="{% url 'user-list' %}" class="h7 btn m-0">{{ user.username }}</a>
+                    <a href="{% url 'user-list' %}?n=3" class="btn btn-outline-secondary rounded-circle border-0 m-0">
+                        3
+                    </a>
                 </div>
                 <a href="{% url 'logout' %}" class="btn btn-outline-warning ml">Выйти</a>
                 {% else %}
