@@ -21,7 +21,9 @@ from company.models import Company, Collection
 from company.serializers import CompanySerializer, CollectionSerializer
 
 
-class DocumentMixin():
+class DocumentViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
     def get_allowed_doc_list(self):
         doc_perm = Document.objects.filter(
             collection=self.collection,
@@ -57,9 +59,6 @@ class DocumentMixin():
         if self.company is None:
             raise exceptions.NotFound("Компания не найдена")
 
-
-class DocumentViewSet(viewsets.ViewSet, DocumentMixin):
-    permission_classes = [permissions.IsAuthenticated]
 
     def get_mongodb(self, collection: str = None):
         if collection is None:
