@@ -107,7 +107,7 @@ class SyncCollectionViewSet(SyncViewMixin):
             serializer.save(
                 company=self.company,
                 mongo_collection=
-                f'{serializer.validated_data.get("url_name")}_{get_random_string("4")}'
+                f'{serializer.validated_data.get("url_name")}_{get_random_string(4)}'
             )
         else:
             serializer = CollectionUploadSerializer(collection,
@@ -129,7 +129,7 @@ class SyncRoleViewSet(SyncViewMixin):
     def save_or_edit(self, data):
         serializer = RoleUploadSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        role = Role.objects.get_or_create(name=data.get("name"),
+        role, created = Role.objects.get_or_create(name=data.get("name"),
                                           company=self.company)
         if data.get("delete_old_collections", False):
             role.collections_set.clear()
@@ -140,23 +140,22 @@ class SyncRoleViewSet(SyncViewMixin):
                 Collection.objects.filter(company=self.company,
                                           url_name=url_name).first())
         for username in data.get("username_list", []):
-            role.users.add(
-                Account.objects.filter(controller__company=self.company,
+            role.users.add(Account.objects.filter(controller__company_creator=self.company,
                                        username=username).first())
-        return serializer
+        return serializer.data
 
 
 class SyncDocsViewSet(SyncViewMixin):
     def create(self, request):
         self.get_company()
-        self.collection = self.get_collection(request.data.get("url_name", ""))
         try:
+            self.collection = self.get_collection(request.data.get("url_name", ""))
             return Response(self.save_or_edit_list(request.data))
         except Exception as e:
             raise exceptions.APIException(e)
 
     def save_or_edit_list(self, data):
-        serializer = DocListUploadSerializer(data=data, many=True)
+        serializer = DocListUploadSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         result = {}
         if serializer.validated_data.get("delete_old", False):
@@ -174,7 +173,7 @@ class SyncDocsViewSet(SyncViewMixin):
                     doc.roles.add(role)
             result[number] = {
                 "is_new": bool(sub_result.upserted_id),
-                "new_id": doc.upserted_id,
+                "new_id": sub_result.upserted_id,
             }
         return result
 
