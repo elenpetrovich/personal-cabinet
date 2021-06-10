@@ -134,6 +134,7 @@ class DocumentViewSet(viewsets.ViewSet):
         config = self.is_allowed_doc(pk)
         file_list = []
         fullpath = config.folder
+        fullpath.mkdir(parents=True,  exist_ok=True)
         for f in fullpath.iterdir():
             if not f.name.startswith('.'):
                 file_list.append((str(f.relative_to(fullpath)),
